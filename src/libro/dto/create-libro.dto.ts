@@ -28,7 +28,7 @@ export class CreateLibroDto {
   @IsOptional()
   precio?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'URL de la imagen de portada' })
   @IsString()
   @IsOptional()
   imagen?: string;
@@ -37,4 +37,10 @@ export class CreateLibroDto {
   @IsString()
   @IsOptional()
   imagenThumbnail?: string;
+
+  
+  @ApiProperty({ required: false, description: 'ISBN único del libro' })
+  @IsString()
+  @IsOptional()
+  isbn?: string;
 }
