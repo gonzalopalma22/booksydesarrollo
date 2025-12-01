@@ -1,36 +1,40 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsMongoId, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLibroDto {
-  @ApiProperty({
-    example: 'Nombre del Libro',
-    description: 'Nombre del Libro',
-  })
+  @ApiProperty({ description: 'Título del libro' })
+  @IsString()
   @IsNotEmpty()
-  @IsString()
-  nombre: string;
+  titulo: string;
 
-  @ApiPropertyOptional({
-    example: 'Descripción del Libro',
-    description: 'Descripción opcional',
-  })
-  @IsOptional()
+  @ApiProperty({ description: 'ID del Autor (Debe ser un ObjectId válido)' })
+  @IsMongoId()
+  @IsNotEmpty()
+  autor: string; 
+
+  @ApiProperty({ description: 'ID de la Categoría (Debe ser un ObjectId válido)' })
+  @IsMongoId()
+  @IsNotEmpty()
+  categoria: string; 
+
+  @ApiProperty({ required: false })
   @IsString()
+  @IsOptional()
   descripcion?: string;
 
-  @ApiPropertyOptional({
-    example: 'https://example.com/imagen.jpg',
-    description: 'URL de la imagen',
-  })
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
   @IsOptional()
+  precio?: number;
+
+  @ApiProperty({ required: false })
   @IsString()
+  @IsOptional()
   imagen?: string;
 
-  @ApiPropertyOptional({
-    example: 'https://example.com/thumbnail.jpg',
-    description: 'URL del thumbnail',
-  })
-  @IsOptional()
+  @ApiProperty({ required: false })
   @IsString()
+  @IsOptional()
   imagenThumbnail?: string;
 }
