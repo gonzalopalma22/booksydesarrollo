@@ -9,7 +9,9 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UploadModule } from './upload/upload.module';
 import { ClienteProfileModule } from './cliente-profile/cliente-profile.module';
-import { LibroModule } from './libro/libro.module'; // 
+import { LibroModule } from './libro/libro.module'; 
+import { CategoriaModule } from './categoria/categoria.module'; 
+import { AutorModule } from './autor/autor.module';           
 
 @Module({
   imports: [
@@ -23,26 +25,16 @@ import { LibroModule } from './libro/libro.module'; //
       }),
     }),
     ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 3,
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 20,
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 100,
-      },
+      { name: 'short', ttl: 1000, limit: 3 },
+      { name: 'medium', ttl: 10000, limit: 20 },
+      { name: 'long', ttl: 60000, limit: 100 },
     ]),
     AuthModule,
     ClienteProfileModule,
     UploadModule,
     LibroModule, 
+    CategoriaModule, 
+    AutorModule,     
   ],
   controllers: [AppController],
   providers: [
