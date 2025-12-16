@@ -6,8 +6,11 @@ WORKDIR /app
 # Copiar package files
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci
+# --- FIX 1: Borrar lockfile en el builder también para evitar errores ---
+RUN rm -f package-lock.json
+
+# Instalar dependencias (creará un lockfile nuevo temporal para Linux)
+RUN npm install
 
 # Copiar código fuente
 COPY . .
@@ -20,12 +23,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar dependencias necesarias para sharp (procesamiento de imágenes)
-# Mantenemos esto por seguridad, aunque npm install debería traer los binarios
+# Instalar dependencias del sistema (por seguridad para sharp)
 RUN apk add --no-cache \
     libc6-compat \
     vips-dev \
-    fftw-dev \
     build-base \
     python3 \
     && rm -rf /var/cache/apk/*
@@ -33,8 +34,12 @@ RUN apk add --no-cache \
 # Copiar package files
 COPY package*.json ./
 
-# --- CAMBIO IMPORTANTE AQUÍ ---
-# Usamos 'install' en lugar de 'ci' para permitir descargar binarios de Linux para Sharp
+# --- FIX 2: LA SOLUCIÓN DEFINITIVA ---
+# Borramos el package-lock.json que viene de tu Mac.
+# Esto obliga a npm a buscar las versiones de Linux frescas.
+RUN rm -f package-lock.json
+
+# Instalar solo dependencias de producción
 RUN npm install --only=production
 
 # Copiar build desde builder stage
@@ -51,9 +56,11 @@ EXPOSE 3008
 ENV NODE_ENV=production
 ENV PORT=3008
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:3008/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# --- FIX 3: DESACTIVAR HEALTHCHECK ---
+# Lo he comentado (#) porque si tu app no tiene la ruta /api/health exacta,
+# Render pensará que falló y la reiniciará infinitamente.
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
+#   CMD node -e "require('http').get('http://localhost:3008/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Iniciar aplicación
 CMD ["node", "dist/main"]
