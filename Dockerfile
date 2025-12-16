@@ -21,6 +21,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Instalar dependencias necesarias para sharp (procesamiento de imágenes)
+# Mantenemos esto por seguridad, aunque npm install debería traer los binarios
 RUN apk add --no-cache \
     libc6-compat \
     vips-dev \
@@ -32,8 +33,9 @@ RUN apk add --no-cache \
 # Copiar package files
 COPY package*.json ./
 
-# Instalar solo dependencias de producción
-RUN npm ci --only=production
+# --- CAMBIO IMPORTANTE AQUÍ ---
+# Usamos 'install' en lugar de 'ci' para permitir descargar binarios de Linux para Sharp
+RUN npm install --only=production
 
 # Copiar build desde builder stage
 COPY --from=builder /app/dist ./dist
