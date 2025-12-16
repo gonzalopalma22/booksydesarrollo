@@ -1,66 +1,58 @@
-# Build stage
-FROM node:20-alpine AS builder
+# --- Etapa de Construcción (Builder) ---
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copiar package files
+# Copiamos los archivos de configuración
 COPY package*.json ./
 
-# --- FIX 1: Borrar lockfile en el builder también para evitar errores ---
+# 1. Borramos el package-lock de Mac para evitar conflictos
 RUN rm -f package-lock.json
 
-# Instalar dependencias (creará un lockfile nuevo temporal para Linux)
+# 2. Instalamos todas las dependencias (generará un lockfile nuevo para Linux)
 RUN npm install
 
-# Copiar código fuente
+# Copiamos el resto del código
 COPY . .
 
-# Build de la aplicación
+# Construimos la aplicación
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
+# --- Etapa de Producción ---
+FROM node:20-slim
 
 WORKDIR /app
 
-# Instalar dependencias del sistema (por seguridad para sharp)
-RUN apk add --no-cache \
-    libc6-compat \
-    vips-dev \
-    build-base \
+# 3. Instalamos dependencias del sistema necesarias para Sharp (versión Debian)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    && rm -rf /var/cache/apk/*
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copiar package files
+# Copiamos los json
 COPY package*.json ./
 
-# --- FIX 2: LA SOLUCIÓN DEFINITIVA ---
-# Borramos el package-lock.json que viene de tu Mac.
-# Esto obliga a npm a buscar las versiones de Linux frescas.
+# 4. Borramos de nuevo el lockfile para asegurar instalación limpia
 RUN rm -f package-lock.json
 
-# Instalar solo dependencias de producción
+# 5. Instalamos SOLO producción (Sharp descargará el binario correcto de Linux aquí)
 RUN npm install --only=production
 
-# Copiar build desde builder stage
+# Copiamos la carpeta 'dist' creada en la etapa anterior
 COPY --from=builder /app/dist ./dist
 
-# Crear directorios para uploads con permisos correctos
+# Crear carpetas de subida
 RUN mkdir -p uploads/thumbnails && \
     chmod -R 777 uploads
 
-# Exponer puerto
-EXPOSE 3008
-
-# Variables de entorno por defecto
+# Configuración de puerto y entorno
 ENV NODE_ENV=production
 ENV PORT=3008
+EXPOSE 3008
 
-# --- FIX 3: DESACTIVAR HEALTHCHECK ---
-# Lo he comentado (#) porque si tu app no tiene la ruta /api/health exacta,
-# Render pensará que falló y la reiniciará infinitamente.
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-#   CMD node -e "require('http').get('http://localhost:3008/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# Sin Healthcheck para evitar esperas infinitas
+# HEALTHCHECK ... (Desactivado)
 
-# Iniciar aplicación
+# Arrancar la app
 CMD ["node", "dist/main"]
